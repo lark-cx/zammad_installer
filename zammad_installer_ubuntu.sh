@@ -339,12 +339,12 @@ ES_CA_TMP="/tmp/es_ca.crt"
 cp /etc/elasticsearch/certs/http_ca.crt "$ES_CA_TMP"
 chmod 644 "$ES_CA_TMP"
 
-cat > /tmp/zammad_add_cert.rb << 'RUBYSCRIPT'
-# Read from the temporary file instead of the protected /etc/elasticsearch directory
-cert_content = File.read('/tmp/es_ca.crt')
+# Removed quotes to allow var expansion in heredoc
+# So be careful with $ characters
+cat > /tmp/zammad_add_cert.rb << RUBYSCRIPT
+cert_content = File.read('$ES_CA_TMP')
 cert = OpenSSL::X509::Certificate.new(cert_content)
 
-# A removed "name: ..." which causes crashes in newer Zammad versions
 SSLCertificate.create!(
   certificate: cert_content,
   not_before: cert.not_before,
