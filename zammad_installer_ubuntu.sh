@@ -10,23 +10,6 @@
 #
 # Target OS: Ubuntu 24.04.3 LTS (compatible with 20.04+)
 #
-# Changes in latest version:
-# - Updated to Elasticsearch 8.x (includes bundled JDK)
-# - Enabled Elasticsearch 8.x security with HTTPS and authentication
-# - Automatic SSL certificate configuration for Zammad
-# - Secure password generation for Elasticsearch
-# - Removed ingest-attachment plugin installation (bundled in ES 8.x)
-# - Modernized TLS configuration (TLSv1.2 + TLSv1.3)
-# - Updated SSL cipher suite for better security
-# - Fixed apt-key deprecation (using gpg --dearmor with keyrings)
-# - Removed deprecated file permission fix
-#
-# Feel free to change this to fit your needs.
-#
-# Disclaimer: this script is provided on an "AS IS" basis.
-# The autor is not to be held responsible for the use, misuse and/or any damage
-# that this little tool may cause.
-#
 
 # some variables
 zammad_fqdn=$HOSTNAME                       # use the system's variables
@@ -66,7 +49,7 @@ function checkStatus() {
 # little banner
 cat << EOF
 
-=== Zammad Installer - v.0.002 (Ubuntu 24.04.3) ===
+=== Zammad Installer - v.0.004 (Ubuntu 24.04.3) ===
     by: martinm@rsysadmin.com
     Updated: 2025-11-10 for Ubuntu 24.04.3 LTS
 -------------------------------------------------
@@ -205,6 +188,11 @@ else
   echo -e "ERROR - is nginx installed?\n"
   exit 1
 fi
+
+# Generate this before nginx config
+echo "== Generating dhparam.pem file (this may take a few minutes)..."
+openssl dhparam -out $ssl_dhp 2048 
+checkStatus
 
 echo -e "== Creating nginx configuration with SSL support\t\c"
 echo "
@@ -367,10 +355,6 @@ rm -f "$ES_CA_TMP"
 
 checkStatus
 
-zammad run rails runner /tmp/zammad_add_cert.rb
-rm -f /tmp/zammad_add_cert.rb
-checkStatus
-
 echo -e "== Connecting Zammad and ElasticSearch with secure credentials\t\c"
 zammad run rails r "Setting.set('es_url', 'https://localhost:9200')" || { echo "[ ERROR ] Failed to set es_url"; exit 1; }
 zammad run rails r "Setting.set('es_user', 'elastic')" || { echo "[ ERROR ] Failed to set es_user"; exit 1; }
@@ -405,9 +389,6 @@ zammad run rails r "Setting.set('es_attachment_ignore', [ '.png', '.jpg', '.jpeg
 
 echo -e "== Setting maximum size for attachements to be indexed"
 zammad run rails r "Setting.set('es_attachment_max_size_in_mb', 50)"
-
-echo "== Generating dhparam.pem file (this may take a few minutes)..."
-openssl dhparam -out $ssl_dhp 2048 
 
 echo "== Restarting services..."
 systemctl restart elasticsearch
@@ -446,8 +427,5 @@ echo ""
 echo "Installation log: $zammadLog"
 echo "=========================================="
 echo ""
-
-
-
 
 # The End.
