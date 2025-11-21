@@ -104,15 +104,19 @@ systemctl daemon-reload
 checkStatus
 
 echo -e "== Enabling and starting ElasticSearch\t\c"
-systemctl -q enable --now elasticsearch
+systemctl enable elasticsearch
+# Force a restart to ensure the single-node config is picked up
+systemctl restart elasticsearch
 checkStatus
 
 echo -e "== Waiting for ElasticSearch to start up..."
-# Wait for Elasticsearch to be fully ready
+# Wait specifically for HTTP 200 (OK) or 401 (Auth Required). 
 for i in {1..60}; do
   STATUS=$(curl -s -k -o /dev/null -w "%{http_code}" https://localhost:9200)
   if [[ "$STATUS" == "200" || "$STATUS" == "401" ]]; then
-    echo "ElasticSearch is ready (HTTP $STATUS)!"
+    echo "ElasticSearch is responding (HTTP $STATUS)!"
+    echo "Waiting 15 seconds for internal initialization to prevent 503 errors..."
+    sleep 15
     break
   fi
   if [ $i -eq 60 ]; then
