@@ -339,8 +339,15 @@ for i in {1..30}; do
   sleep 3
 done
 
+echo -e "== Ensuring directory permissions are correct"
+mkdir -p /etc/elasticsearch/certs
+chmod a+rx /etc/elasticsearch
+chmod a+rx /etc/elasticsearch/certs
+chmod g+w /etc/elasticsearch/certs
+
 echo -e "== Extracting and adding ElasticSearch SSL certificate to Zammad\t\c"
 ES_CERT_PATH="/etc/elasticsearch/certs/http_ca.crt"
+chmod a+r "$ES_CERT_PATH" # Ensure cert is readable
 cat > /tmp/zammad_add_cert.rb << 'RUBYSCRIPT'
 cert_content = File.read('/etc/elasticsearch/certs/http_ca.crt')
 cert = OpenSSL::X509::Certificate.new(cert_content)
