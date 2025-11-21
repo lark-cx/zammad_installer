@@ -109,13 +109,14 @@ checkStatus
 
 echo -e "== Waiting for ElasticSearch to start up..."
 # Wait for Elasticsearch to be fully ready
-for i in {1..30}; do
-  if curl -s -k https://localhost:9200 > /dev/null 2>&1; then
-    echo "ElasticSearch is ready!"
+for i in {1..60}; do
+  STATUS=$(curl -s -k -o /dev/null -w "%{http_code}" https://localhost:9200)
+  if [[ "$STATUS" == "200" || "$STATUS" == "401" ]]; then
+    echo "ElasticSearch is ready (HTTP $STATUS)!"
     break
   fi
-  if [ $i -eq 30 ]; then
-    echo "WARNING: ElasticSearch may not be fully started"
+  if [ $i -eq 60 ]; then
+    echo "WARNING: ElasticSearch startup timed out. Last Status: $STATUS"
   fi
   sleep 2
 done
